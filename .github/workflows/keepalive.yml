@@ -1,5 +1,6 @@
 # 달력 볼까? 서버(Supabase 무료 프로젝트)가 일주일 동안 접속이 없으면 잠기는 것을 막기 위해
 # 매일 한 번 서버에 가벼운 조회를 보낸다. (설치된 PC가 모두 꺼져 있는 연휴에도 서버가 깨어 있게)
+# 로그인 없는 조회라 자료는 보이지 않고 "권한 없음"(42501)이 돌아오는데, 그것만으로도 데이터베이스까지 닿은 것이다.
 name: 서버 깨우기
 on:
   schedule:
@@ -11,7 +12,8 @@ jobs:
     steps:
       - name: 서버에 조회 한 번
         run: |
-          code=$(curl -s -o /dev/null -w '%{http_code}' "${{ secrets.SUPABASE_URL }}/rest/v1/complexes?select=id&limit=1" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          body=$(curl -s -w '\n%{http_code}' "${{ secrets.SUPABASE_URL }}/rest/v1/complexes?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}")
+          code=$(echo "$body" | tail -1)
           echo "HTTP $code"
-          test "$code" = "200"
+          if [ "$code" = "200" ] || echo "$body" | grep -q '42501'; then echo "서버가 응답했습니다."; else echo "$body"; exit 1; fi
