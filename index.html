@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>달력 볼까? 다운로드</title>
+<link rel="icon" href="icon.png">
+<style>
+  :root {
+    --bg: #eef2f8; --card: #fff; --text: #1d2433; --muted: #5d6779;
+    --primary: #2f6fdf; --primary-dark: #2459b8; --line: #dde3ee; --warn-bg: #fff6e0; --warn: #7a5a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141820; --card: #1e2430; --text: #e8ecf3; --muted: #9aa4b5;
+      --primary: #5b8ff0; --primary-dark: #7aa5f5; --line: #2e3646; --warn-bg: #3a3020; --warn: #f0d48a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif; line-height: 1.6;
+  }
+  main { max-width: 560px; margin: 0 auto; padding: 40px 16px 48px; }
+  .card { background: var(--card); border-radius: 18px; padding: 32px 24px; box-shadow: 0 2px 12px rgba(0,0,0,.06); }
+  .head { text-align: center; }
+  .head img { width: 88px; height: 88px; border-radius: 20px; }
+  h1 { font-size: 28px; margin: 12px 0 4px; }
+  .sub { color: var(--muted); margin: 0; }
+  .version { color: var(--muted); font-size: 14px; margin: 20px 0 10px; text-align: center; min-height: 1.6em; }
+  .download {
+    display: block; text-align: center; background: var(--primary); color: #fff; text-decoration: none;
+    font-size: 20px; font-weight: 700; padding: 16px; border-radius: 12px;
+  }
+  .download:hover { background: var(--primary-dark); }
+  .download[aria-disabled="true"] { opacity: .6; pointer-events: none; }
+  .fallback { text-align: center; font-size: 14px; margin: 10px 0 0; }
+  .fallback a { color: var(--primary); }
+  h2 { font-size: 17px; margin: 28px 0 8px; }
+  ol { margin: 0; padding-left: 22px; }
+  li { margin: 4px 0; }
+  .note { background: var(--warn-bg); color: var(--warn); border-radius: 10px; padding: 12px 14px; font-size: 14px; margin-top: 20px; }
+  .notes { white-space: pre-wrap; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; margin: 0; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="card">
+    <div class="head">
+      <img src="icon.png" alt="">
+      <h1>달력 볼까?</h1>
+      <p class="sub">공동주택 관리사무소 알림 캘린더</p>
+    </div>
+
+    <p class="version" id="version">최신 버전을 확인하는 중…</p>
+    <a class="download" id="download" href="https://github.com/bombori0403/danji-calendar/releases/latest" aria-disabled="true">Windows용 다운로드</a>
+    <p class="fallback" id="fallback" hidden>
+      자동으로 찾지 못했습니다. <a href="https://github.com/bombori0403/danji-calendar/releases/latest">배포 페이지</a>에서
+      <strong>danji-calendar-setup-버전.exe</strong> 파일을 눌러 받아 주세요.
+    </p>
+
+    <h2>설치 방법</h2>
+    <ol>
+      <li>위 단추를 눌러 설치파일을 받습니다.</li>
+      <li>받은 파일을 실행합니다. "Windows의 PC 보호" 창이 뜨면 <strong>추가 정보 → 실행</strong>을 누릅니다.</li>
+      <li>직원 PC는 <strong>직원 PC 등록</strong>에서 관리자에게 받은 단지 코드를 넣고, 관리자·매니저는 계정으로 로그인합니다.</li>
+    </ol>
+
+    <div class="note">
+      이미 설치된 PC는 다시 받을 필요가 없습니다. 새 버전은 자동으로 내려받아지고,
+      준비되면 "지금 다시 시작" 안내창이 뜹니다. (0.1.5 이상)
+    </div>
+
+    <h2 id="notes-title" hidden>이번 버전에서 바뀐 점</h2>
+    <p class="notes" id="notes" hidden></p>
+  </div>
+  <footer>달력 볼까? · 설치파일은 GitHub에 보관됩니다</footer>
+</main>
+<script>
+  const btn = document.getElementById('download')
+  const ver = document.getElementById('version')
+  const fail = () => {
+    ver.textContent = ''
+    btn.removeAttribute('aria-disabled')
+    document.getElementById('fallback').hidden = false
+  }
+  fetch('https://api.github.com/repos/bombori0403/danji-calendar/releases/latest')
+    .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
+    .then((rel) => {
+      const exe = (rel.assets || []).find((a) => a.name.endsWith('.exe'))
+      if (!exe) return fail()
+      btn.href = exe.browser_download_url
+      btn.removeAttribute('aria-disabled')
+      const date = new Date(rel.published_at).toLocaleDateString('ko-KR')
+      const mb = Math.round(exe.size / 1024 / 1024)
+      ver.textContent = `최신 버전 ${rel.tag_name.replace(/^v/, '')} · ${date} 배포 · ${mb}MB`
+      const body = (rel.body || '').trim()
+      if (body) {
+        document.getElementById('notes').textContent = body
+        document.getElementById('notes').hidden = false
+        document.getElementById('notes-title').hidden = false
+      }
+    })
+    .catch(fail)
+</script>
+</body>
+</html>
